@@ -1,20 +1,8 @@
-# Szlaki Pyłu — Web MVP v2 (GitHub Pages)
+# Szlaki Pyłu — Web MVP v2.1
 
-Nowości w v2:
-- **Tlen jako towar** (kanistry): kup/sprzedaj na planetach, użyj przyciskiem **Akcja** (+6 tlenu).
-- **Każdy heks planety** ma magazyn (stock) + popyt (demand) + wahania cen.
-- **Instalacje na planetach**: kup/ulepsz, a one co turę produkują towary do magazynu planety:
-  - Instalacja tlenu, Kopalnia, Biofarma, Laboratorium
-- **Mapa**: dużo pustej przestrzeni + **Słońce** w centrum.
+Poprawki i nowości:
+- **Naprawa Instalacji**: przycisk działa niezależnie od stanu planety (guard + auto-uzupełnienie ekonomii).
+- **Skaner**: stałe okno z opisem aktualnego heksa + mini-grafika (Słońce / planeta / pustka).
 
-## Jak uruchomić
-Lokalnie: VSCode + Live Server → `index.html`.
-
-GitHub Pages:
-- wrzuć `index.html`, `main.js`, `README.md`
-- Settings → Pages → Deploy from branch → main / root
-
-## Sterowanie
-Klikaj sąsiednie heksy.
-- SPACE: przelot
-- PLANET: Handel / Instalacje / Akcja
+## GitHub Pages
+Wrzuć `index.html`, `main.js`, `README.md` do repo i włącz Pages (main / root).

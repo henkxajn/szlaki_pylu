@@ -1,10 +1,9 @@
-// Szlaki Pyłu — Web MVP v2
-// Nowe mechaniki: handel tlenem (towar), planety jako osobne heksy z zasobami,
-// instalacje produkcyjne (w tym produkcja tlenu), oraz mapa z pustą przestrzenią i Słońcem w centrum.
+// Szlaki Pyłu — Web MVP v2.1
+// Fix: przycisk Instalacje działa niezawodnie (guard na brak econ).
+// Nowość: Skaner (inspektor) z opisem heksa + mini-grafiką planety.
 
 const HexType = { SUN:0, SPACE:1, PLANET:2 };
 
-// Towary (w tym Tlen jako towar w kanistrach)
 const Goods = [
   { id:0, name:"Ruda", base:12 },
   { id:1, name:"Paliwo", base:20 },
@@ -15,18 +14,17 @@ const Goods = [
   { id:6, name:"Tlen (kanister)", base:14 },
 ];
 
-// Instalacje do kupienia na planetach (produkcja idzie do magazynu planety)
 const Installations = [
-  { id:"OXYGEN_PLANT", name:"Instalacja tlenu", cost:80, produces:{ good:6, per_tick:2 }, desc:"Produkuje kanistry tlenu." },
-  { id:"MINE",         name:"Kopalnia",         cost:90, produces:{ good:0, per_tick:2 }, desc:"Wydobywa rudę." },
-  { id:"FARM",         name:"Biofarma",         cost:70, produces:{ good:2, per_tick:2 }, desc:"Produkuje żywność." },
+  { id:"OXYGEN_PLANT", name:"Instalacja tlenu", cost:80,  produces:{ good:6, per_tick:2 }, desc:"Produkuje kanistry tlenu." },
+  { id:"MINE",         name:"Kopalnia",         cost:90,  produces:{ good:0, per_tick:2 }, desc:"Wydobywa rudę." },
+  { id:"FARM",         name:"Biofarma",         cost:70,  produces:{ good:2, per_tick:2 }, desc:"Produkuje żywność." },
   { id:"LAB",          name:"Laboratorium",     cost:110, produces:{ good:5, per_tick:1 }, desc:"Wytwarza dane/sygnały." },
 ];
 
 const state = {
   credits: 140,
-  oxygen: 12,      // bieżący “oddech” (spada co ruch)
-  fuel: 12,        // spada co ruch
+  oxygen: 12,
+  fuel: 12,
   cargoCap: 14,
   cargo: new Map(Goods.map(g => [g.id, 0])),
   rng: mulberry32((Date.now() >>> 0) ^ 0xC0FFEE),
@@ -34,25 +32,15 @@ const state = {
 };
 
 function cargoUsed() { let s=0; for (const v of state.cargo.values()) s+=v; return s; }
-
-function log(msg) {
-  ui.logEl.textContent += msg + "\n";
-  ui.logEl.scrollTop = ui.logEl.scrollHeight;
-}
+function log(msg) { ui.logEl.textContent += msg + "\n"; ui.logEl.scrollTop = ui.logEl.scrollHeight; }
 function refreshResources() {
-  ui.resEl.textContent =
-    `CR: ${state.credits}  |  Tlen: ${state.oxygen}  |  Paliwo: ${state.fuel}  |  Ładownia: ${cargoUsed()}/${state.cargoCap}`;
+  ui.resEl.textContent = `CR: ${state.credits}  |  Tlen: ${state.oxygen}  |  Paliwo: ${state.fuel}  |  Ładownia: ${cargoUsed()}/${state.cargoCap}`;
 }
-function consumeTurn() {
-  state.oxygen = Math.max(0, state.oxygen - 1);
-  state.fuel = Math.max(0, state.fuel - 1);
-  refreshResources();
-}
+function consumeTurn() { state.oxygen = Math.max(0, state.oxygen - 1); state.fuel = Math.max(0, state.fuel - 1); refreshResources(); }
 function isDead(){ return state.oxygen <= 0 || state.fuel <= 0; }
 
-// --- Hex math (axial pointy-top) ---
+// --- Hex math ---
 const HEX_SIZE = 34;
-
 function axialToPixel(q,r){
   const x = HEX_SIZE * (Math.sqrt(3)*q + Math.sqrt(3)/2*r);
   const y = HEX_SIZE * (3/2*r);
@@ -80,28 +68,33 @@ function neighbors(q,r){
   ];
 }
 function key(q,r){ return `${q},${r}`; }
+function hexDistance(q1,r1,q2,r2){
+  const dq = q1-q2;
+  const dr = r1-r2;
+  const ds = (q1+r1) - (q2+r2);
+  return (Math.abs(dq) + Math.abs(dr) + Math.abs(ds)) / 2;
+}
 
-// --- Planet “biomes” (wygląd + zasoby) ---
+// --- Biomes ---
 const Biomes = [
-  { id:"MARS",   name:"Marsopodobna",  color:0xd3543a, ring:false, tags:["ruda+", "tlen-"] },
-  { id:"SATURN", name:"Gazowy gigant", color:0xd9c27a, ring:true,  tags:["paliwo+", "dane+"] },
-  { id:"OCEAN",  name:"Oceaniczna",    color:0x2f7fd6, ring:false, tags:["żywność+", "medy+"] },
-  { id:"ICE",    name:"Lodowa",        color:0x8fd3ff, ring:false, tags:["tlen+", "medy+"] },
-  { id:"JUNGLE", name:"Dżungla",       color:0x2ecc71, ring:false, tags:["żywność+", "dane-"] },
-  { id:"BARREN", name:"Jałowa",        color:0x9aa0a6, ring:false, tags:["części+", "ruda+"] },
+  { id:"MARS",   name:"Marsopodobna",  color:"#d3543a", ring:false, tags:["ruda+", "tlen-"] },
+  { id:"SATURN", name:"Gazowy gigant", color:"#d9c27a", ring:true,  tags:["paliwo+", "dane+"] },
+  { id:"OCEAN",  name:"Oceaniczna",    color:"#2f7fd6", ring:false, tags:["żywność+", "medy+"] },
+  { id:"ICE",    name:"Lodowa",        color:"#8fd3ff", ring:false, tags:["tlen+", "medy+"] },
+  { id:"JUNGLE", name:"Dżungla",       color:"#2ecc71", ring:false, tags:["żywność+", "dane-"] },
+  { id:"BARREN", name:"Jałowa",        color:"#9aa0a6", ring:false, tags:["części+", "ruda+"] },
 ];
-
 function biomeForHex(q,r){
   const h = hash2(q,r);
   return Biomes[h % Biomes.length];
 }
 
-// --- Economy per planet: stock + demand profile + installations ---
+// --- Economy ---
 function makePlanetEconomy(biome){
   const stock = new Map(Goods.map(g => [g.id, 0]));
   const demand = new Map(Goods.map(g => [g.id, 0]));
   const shock = new Map(Goods.map(g => [g.id, 1.0]));
-  const installs = []; // {id, level}
+  const installs = [];
 
   for (const g of Goods){
     stock.set(g.id, randInt(0, 6));
@@ -129,8 +122,17 @@ function makePlanetEconomy(biome){
     stock.set(3, stock.get(3)+6);
     stock.set(0, stock.get(0)+4);
   }
-
   return { stock, demand, shock, installs };
+}
+
+function ensurePlanetEconomy(planet){
+  if (!planet.econ && planet.biome){
+    planet.econ = makePlanetEconomy(planet.biome);
+  }
+  if (!planet.econ){
+    // fallback (nie powinno się zdarzyć)
+    planet.econ = makePlanetEconomy(Biomes[0]);
+  }
 }
 
 function price(econ, goodId){
@@ -138,7 +140,6 @@ function price(econ, goodId){
   const s = econ.stock.get(goodId) ?? 0;
   const d = econ.demand.get(goodId) ?? 0;
   const sh = econ.shock.get(goodId) ?? 1.0;
-
   const p = base * (1 + 0.10*d) * (1.0 - 0.04*Math.min(20, s)) * sh;
   return Math.max(1, Math.round(p));
 }
@@ -165,30 +166,24 @@ function tickEconomy(econ){
   }
 }
 
-// --- World generation (Słońce w centrum, wokół pustka + planety) ---
+// --- World ---
 const RADIUS = 7;
-const world = {
-  hexes: new Map(),
-  player: { q: 0, r: 1 },
-  current: null,
-};
+const world = { hexes: new Map(), player: { q: 0, r: 1 }, current: null };
 
 function generateWorld(){
   world.hexes.clear();
-
   for (let q=-RADIUS; q<=RADIUS; q++){
     for (let r=-RADIUS; r<=RADIUS; r++){
       if (Math.abs(q+r) > RADIUS) continue;
       world.hexes.set(key(q,r), { q,r, type: HexType.SPACE });
     }
   }
-
   world.hexes.set(key(0,0), { q:0, r:0, type: HexType.SUN });
 
   const planetCount = 18;
   let attempts = 0, placed = 0;
 
-  while (placed < planetCount && attempts < 5000){
+  while (placed < planetCount && attempts < 6000){
     attempts++;
     const q = randInt(-RADIUS, RADIUS);
     const r = randInt(-RADIUS, RADIUS);
@@ -202,8 +197,7 @@ function generateWorld(){
     const neigh = neighbors(q,r);
     if (neigh.some(n => (world.hexes.get(key(n.q,n.r))?.type === HexType.PLANET))) continue;
 
-    const dist = hexDistance(q,r, 0,0);
-    if (dist <= 1) continue;
+    if (hexDistance(q,r, 0,0) <= 1) continue;
 
     const biome = biomeForHex(q,r);
     world.hexes.set(k, { q,r, type: HexType.PLANET, biome, econ: makePlanetEconomy(biome) });
@@ -212,15 +206,8 @@ function generateWorld(){
 
   world.player = {q:0, r:1};
   enterHex(world.player.q, world.player.r);
-  log("Mapa: Słońce w centrum, planety rozrzucone w pustce (oddzielone heksami SPACE).");
-  log("Wskazówka: kup 'Tlen (kanister)' i użyj Akcji na planecie, żeby uzupełnić tlen.");
-}
-
-function hexDistance(q1,r1,q2,r2){
-  const dq = q1-q2;
-  const dr = r1-r2;
-  const ds = (q1+r1) - (q2+r2);
-  return (Math.abs(dq) + Math.abs(dr) + Math.abs(ds)) / 2;
+  log("Mapa: Słońce w centrum, planety rozrzucone w pustce (oddzielone SPACE).");
+  log("Tlen jest towarem: kup 'Tlen (kanister)' i zużyj Akcją (+6 tlenu).");
 }
 
 function enterHex(q,r){
@@ -230,17 +217,26 @@ function enterHex(q,r){
 
   state.ticks++;
   for (const cell of world.hexes.values()){
-    if (cell.type === HexType.PLANET) tickEconomy(cell.econ);
+    if (cell.type === HexType.PLANET){
+      ensurePlanetEconomy(cell);
+      tickEconomy(cell.econ);
+    }
   }
 
   showEvent(h);
+  renderInspector(h);
   refreshResources();
 }
 
-// --- UI ---
+// --- UI refs ---
 const ui = {
   resEl: document.getElementById("resources"),
   logEl: document.getElementById("log"),
+
+  inspectTitle: document.getElementById("inspectTitle"),
+  inspectDesc: document.getElementById("inspectDesc"),
+  inspectMeta: document.getElementById("inspectMeta"),
+  planetCanvas: document.getElementById("planetCanvas"),
 
   eventCard: document.getElementById("eventCard"),
   eventTitle: document.getElementById("eventTitle"),
@@ -295,13 +291,108 @@ function titleForHex(h){
   return "?";
 }
 function descForHex(h){
-  if (h.type === HexType.SUN) return "Centrum układu. Gorąco. Na razie brak akcji.";
+  if (h.type === HexType.SUN) return "Centrum układu. Na razie brak akcji.";
   if (h.type === HexType.SPACE) return "Pusta przestrzeń między planetami. Zużywasz tlen/paliwo na przelot.";
-  if (h.type === HexType.PLANET) return "Handluj zasobami i kupuj instalacje, które produkują towary do magazynu planety.";
+  if (h.type === HexType.PLANET) return "Handluj zasobami i kupuj instalacje (produkcja zasila magazyn planety).";
   return "";
 }
 
+// --- Inspector (ładny opis + grafika) ---
+function renderInspector(h){
+  ui.inspectTitle.textContent = "Skaner";
+  ui.inspectDesc.textContent = titleForHex(h);
+  let meta = [];
+
+  if (h.type === HexType.PLANET){
+    ensurePlanetEconomy(h);
+    // top 3 ceny (najdroższe) jako “braki”
+    const prices = Goods.map(g => ({g, p: price(h.econ, g.id), stock: h.econ.stock.get(g.id) ?? 0}))
+      .sort((a,b)=>b.p-a.p);
+    const scarce = prices.slice(0,3).map(x=>`${x.g.name} (${x.p} CR)`).join(", ");
+
+    // instalacje
+    const inst = (h.econ.installs.length === 0) ? "brak" :
+      h.econ.installs.map(i => `${Installations.find(d=>d.id===i.id)?.name ?? i.id} lvl ${i.level}`).join(" • ");
+
+    meta.push(`Biome: ${h.biome.name}`);
+    meta.push(`Drogie tu: ${scarce}`);
+    meta.push(`Instalacje: ${inst}`);
+  } else if (h.type === HexType.SUN){
+    meta.push("Promieniowanie ekstremalne.");
+    meta.push("Z czasem: misje naukowe / megastruktury.");
+  } else {
+    meta.push("Brak infrastruktury.");
+    meta.push("To tylko przelot.");
+  }
+
+  ui.inspectMeta.textContent = meta.join("  |  ");
+  drawInspectorArt(h);
+}
+
+function drawInspectorArt(h){
+  const c = ui.planetCanvas;
+  const ctx = c.getContext("2d");
+  const w = c.width, hh = c.height;
+  ctx.clearRect(0,0,w,hh);
+
+  // tło
+  const grd = ctx.createRadialGradient(w*0.35, hh*0.25, 10, w*0.5, hh*0.5, w*0.7);
+  grd.addColorStop(0, "rgba(255,255,255,0.08)");
+  grd.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = "rgba(0,0,0,0.12)";
+  ctx.fillRect(0,0,w,hh);
+  ctx.fillStyle = grd;
+  ctx.fillRect(0,0,w,hh);
+
+  // gwiazdki
+  ctx.fillStyle = "rgba(255,255,255,0.15)";
+  for (let i=0;i<18;i++){
+    const x = (i*37 % w);
+    const y = (i*53 % hh);
+    ctx.beginPath();
+    ctx.arc(x,y, (i%3===0)?1.3:0.9, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  const cx=w/2, cy=hh/2;
+
+  if (h.type === HexType.SUN){
+    // słońce
+    ctx.beginPath(); ctx.fillStyle="#ffd166"; ctx.arc(cx,cy,28,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.fillStyle="rgba(255,120,0,0.20)"; ctx.arc(cx,cy,40,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.fillStyle="rgba(255,255,255,0.12)"; ctx.arc(cx-10,cy-10,10,0,Math.PI*2); ctx.fill();
+    return;
+  }
+
+  if (h.type === HexType.SPACE){
+    // mgiełka
+    ctx.beginPath(); ctx.fillStyle="rgba(120,160,255,0.08)"; ctx.arc(cx+8,cy+2,36,0,Math.PI*2); ctx.fill();
+    return;
+  }
+
+  // planeta
+  const color = h.biome?.color ?? "#9aa0a6";
+  // cień
+  ctx.beginPath(); ctx.fillStyle="rgba(0,0,0,0.35)"; ctx.arc(cx+8,cy+10,26,0,Math.PI*2); ctx.fill();
+  // glob
+  ctx.beginPath(); ctx.fillStyle=color; ctx.arc(cx,cy,26,0,Math.PI*2); ctx.fill();
+  // highlight
+  ctx.beginPath(); ctx.fillStyle="rgba(255,255,255,0.12)"; ctx.arc(cx-10,cy-12,12,0,Math.PI*2); ctx.fill();
+
+  // ring
+  if (h.biome?.ring){
+    ctx.strokeStyle="rgba(255,255,255,0.22)";
+    ctx.lineWidth=3;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy+2, 40, 16, -0.4, 0, Math.PI*2);
+    ctx.stroke();
+  }
+}
+
+// --- Market / Installations ---
 function showMarket(planet){
+  ensurePlanetEconomy(planet);
+
   ui.eventCard.style.display = "none";
   ui.installCard.style.display = "none";
   ui.marketCard.style.display = "block";
@@ -323,16 +414,16 @@ function showMarket(planet){
     buy.onclick = () => {
       if (state.credits < p) return log("Brak kredytów.");
       if (cargoUsed() >= state.cargoCap) return log("Brak miejsca w ładowni.");
-      const s = planet.econ.stock.get(g.id) ?? 0;
-      if (s <= 0) return log("Brak towaru w magazynie planety.");
+      if ((planet.econ.stock.get(g.id) ?? 0) <= 0) return log("Brak towaru w magazynie planety.");
 
       state.credits -= p;
       state.cargo.set(g.id, owned + 1);
-      planet.econ.stock.set(g.id, s - 1);
+      planet.econ.stock.set(g.id, stock - 1);
 
       refreshResources();
       log(`Kupiono ${g.name} (-${p} CR).`);
       showMarket(planet);
+      renderInspector(planet);
     };
 
     const sell = document.createElement("button");
@@ -341,12 +432,13 @@ function showMarket(planet){
     sell.onclick = () => {
       if (owned <= 0) return log(`Nie masz ${g.name}.`);
       state.cargo.set(g.id, owned - 1);
-      planet.econ.stock.set(g.id, (planet.econ.stock.get(g.id) ?? 0) + 1);
+      planet.econ.stock.set(g.id, stock + 1);
       state.credits += p;
 
       refreshResources();
       log(`Sprzedano ${g.name} (+${p} CR).`);
       showMarket(planet);
+      renderInspector(planet);
     };
 
     ui.marketList.appendChild(name);
@@ -356,6 +448,8 @@ function showMarket(planet){
 }
 
 function showInstallations(planet){
+  ensurePlanetEconomy(planet);
+
   ui.eventCard.style.display = "none";
   ui.marketCard.style.display = "none";
   ui.installCard.style.display = "block";
@@ -379,12 +473,15 @@ function showInstallations(planet){
     btn.onclick = () => {
       if (state.credits < inst.cost) return log("Brak kredytów.");
       state.credits -= inst.cost;
-      if (found) found.level += 1;
+
+      const existing = planet.econ.installs.find(x=>x.id===inst.id);
+      if (existing) existing.level += 1;
       else planet.econ.installs.push({id: inst.id, level: 1});
 
       refreshResources();
-      log(`Instalacja: ${inst.name} → poziom ${(found?.level) ?? 1}.`);
+      log(`Instalacja: ${inst.name} → poziom ${(existing?.level) ?? 1}.`);
       showInstallations(planet);
+      renderInspector(planet);
     };
 
     ui.installList.appendChild(row);
@@ -400,14 +497,15 @@ function doPlanetAction(){
     state.oxygen += 6;
     refreshResources();
     log("Zużyto kanister tlenu: +6 tlenu.");
+    renderInspector(world.current);
   } else {
     log("Brak kanistra tlenu w ładowni. Kup go na rynku albo postaw instalację tlenu.");
   }
 }
 
-// UI events
+// --- Button handlers (robust) ---
 ui.btnMarket.onclick = () => { const h=world.current; if (h?.type===HexType.PLANET) showMarket(h); };
-ui.btnInstall.onclick = () => { const h=world.current; if (h?.type===HexType.PLANET) showInstallations(h); };
+ui.btnInstall.onclick = () => { const h=world.current; if (h?.type===HexType.PLANET) showInstallations(h); else log("Instalacje dostępne tylko na planetach."); };
 ui.btnAction.onclick = () => { const h=world.current; if (h?.type===HexType.PLANET) doPlanetAction(); };
 ui.btnMarketClose.onclick = () => { ui.marketCard.style.display = "none"; };
 ui.btnInstallClose.onclick = () => { ui.installCard.style.display = "none"; };
@@ -447,7 +545,7 @@ class MainScene extends Phaser.Scene {
     const h = this.scale.height;
     const ox = w/2, oy = h/2;
 
-    // gwiazdy tła (deterministyczne)
+    // tło gwiazd
     g.fillStyle(0xffffff, 0.06);
     for (let i=0; i<80; i++){
       const sx = (i*131 % w);
@@ -517,7 +615,8 @@ function drawPlanet(g, cx, cy, biome){
   g.fillStyle(0x000000, 0.35);
   g.fillCircle(cx+5, cy+6, 14);
 
-  g.fillStyle(biome.color, 1.0);
+  const col = Phaser.Display.Color.HexStringToColor(biome.color).color;
+  g.fillStyle(col, 1.0);
   g.fillCircle(cx, cy, 14);
 
   g.fillStyle(0xffffff, 0.10);
@@ -557,7 +656,7 @@ function tryMove(q,r){
   enterHex(q,r);
 }
 
-// --- Random helpers ---
+// --- helpers ---
 function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
 function lerp(a,b,t){ return a + (b-a)*t; }
 function randInt(a,b){ return Math.floor(state.rng()*(b-a+1))+a; }
