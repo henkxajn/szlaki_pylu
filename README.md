@@ -1,26 +1,20 @@
-# Szlaki Pyłu — Web MVP (Phaser 3)
+# Szlaki Pyłu — Web MVP v2 (GitHub Pages)
 
-To jest działający prototyp gry heksowej w przeglądarce.
+Nowości w v2:
+- **Tlen jako towar** (kanistry): kup/sprzedaj na planetach, użyj przyciskiem **Akcja** (+6 tlenu).
+- **Każdy heks planety** ma magazyn (stock) + popyt (demand) + wahania cen.
+- **Instalacje na planetach**: kup/ulepsz, a one co turę produkują towary do magazynu planety:
+  - Instalacja tlenu, Kopalnia, Biofarma, Laboratorium
+- **Mapa**: dużo pustej przestrzeni + **Słońce** w centrum.
 
-## Jak uruchomić (najprościej)
-1. Rozpakuj zip.
-2. Otwórz folder w VSCode.
-3. Zainstaluj/uruchom rozszerzenie **Live Server**.
-4. Kliknij prawym na `index.html` → **Open with Live Server**.
+## Jak uruchomić
+Lokalnie: VSCode + Live Server → `index.html`.
 
-Alternatywnie (Node):
-- zainstaluj `http-server` i odpal w katalogu:
-  - `npx http-server`
+GitHub Pages:
+- wrzuć `index.html`, `main.js`, `README.md`
+- Settings → Pages → Deploy from branch → main / root
 
 ## Sterowanie
-- Klikaj sąsiednie heksy, aby się poruszać (koszt: -1 tlen i -1 paliwo).
-- Po wejściu na heks pojawia się panel zdarzenia:
-  - Handel: kup/sprzedaj
-  - Akcja: wydobycie/loot
-  - Walka: placeholder ryzyko/nagroda
-
-## Następne kroki
-- save/load (localStorage)
-- prawdziwa walka turowa
-- kontrakty, reputacja, frakcje
-- mgła wojny i skaner
+Klikaj sąsiednie heksy.
+- SPACE: przelot
+- PLANET: Handel / Instalacje / Akcja

@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Szlaki Pyłu (Web MVP)</title>
+  <title>Szlaki Pyłu (Web MVP v2)</title>
   <style>
     html, body { margin:0; padding:0; height:100%; background:#0b0d14; color:#e8eaf6; font-family: system-ui, Arial; }
     #wrap { display:flex; height:100%; }
     #game { flex: 1; position: relative; }
-    #ui { width: 360px; max-width: 45vw; border-left: 1px solid rgba(255,255,255,.1); padding: 12px; box-sizing: border-box; background: rgba(255,255,255,.03); overflow:auto; }
+    #ui { width: 380px; max-width: 45vw; border-left: 1px solid rgba(255,255,255,.1); padding: 12px; box-sizing: border-box; background: rgba(255,255,255,.03); overflow:auto; }
     .bar { display:flex; gap:8px; flex-wrap:wrap; font-weight:600; margin-bottom: 10px; }
     .card { border:1px solid rgba(255,255,255,.12); border-radius:12px; padding:12px; margin: 10px 0; background: rgba(0,0,0,.25); }
     .title { font-size: 18px; margin: 0 0 8px 0; }
@@ -18,8 +18,10 @@
     button:disabled { opacity:.5; cursor:not-allowed; }
     .row { display:flex; justify-content:space-between; align-items:center; gap:8px; }
     .grid { display:grid; grid-template-columns: 1fr auto auto; gap:8px; align-items:center; }
+    .grid2 { display:grid; grid-template-columns: 1fr auto; gap:10px; align-items:center; }
     #log { white-space: pre-wrap; font-size: 13px; opacity:.9; }
     .hint { font-size: 12px; opacity: .75; margin-top: 6px; }
+    .pill { padding: 2px 8px; border-radius: 999px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.05); font-size: 12px; opacity:.95; }
   </style>
 </head>
 <body>
@@ -27,7 +29,7 @@
     <div id="game"></div>
     <div id="ui">
       <div class="bar" id="resources"></div>
-      <div class="hint">Sterowanie: kliknij sąsiedni heks, aby wykonać ruch (koszt: -1 tlen, -1 paliwo).</div>
+      <div class="hint">Klikaj sąsiednie heksy (koszt ruchu: -1 tlen, -1 paliwo). Tlen możesz kupować jako towar lub produkować instalacją na planetach.</div>
 
       <div class="card" id="eventCard" style="display:none">
         <div class="title" id="eventTitle"></div>
@@ -35,10 +37,12 @@
         <div style="height:10px"></div>
         <div class="row" style="gap:10px; flex-wrap:wrap">
           <button id="btnMarket">Handel</button>
+          <button id="btnInstall">Instalacje</button>
           <button id="btnAction">Akcja</button>
           <button id="btnFight">Walka</button>
           <button id="btnClose">Zamknij</button>
         </div>
+        <div class="hint" id="planetTags" style="margin-top:10px"></div>
       </div>
 
       <div class="card" id="marketCard" style="display:none">
@@ -46,6 +50,15 @@
         <div class="grid" id="marketList"></div>
         <div style="height:10px"></div>
         <button id="btnMarketClose">Zamknij</button>
+      </div>
+
+      <div class="card" id="installCard" style="display:none">
+        <div class="title" id="installTitle">Instalacje</div>
+        <div class="muted" id="installDesc"></div>
+        <div style="height:10px"></div>
+        <div class="grid2" id="installList"></div>
+        <div style="height:10px"></div>
+        <button id="btnInstallClose">Zamknij</button>
       </div>
 
       <div class="card">
