@@ -209,7 +209,13 @@ function enterHex(q,r){
   showEvent(h);
   renderInspector(h);
   refreshResources();
-  requestRender(); // odśwież rysunek
+  requestRender();
+    // canvas-size-log
+    try {
+      const canvas = this.game.canvas;
+      log(`Canvas: ${canvas.width}x${canvas.height} | parent #game: ${document.getElementById('game')?.clientWidth}x${document.getElementById('game')?.clientHeight}`);
+    } catch (e) { log('Canvas size check failed'); }
+ // odśwież rysunek
 }
 
 // UI
@@ -500,12 +506,18 @@ class MainScene extends Phaser.Scene {
 
     generateWorld();
     // DEBUG_RECT
-    this.add.rectangle(this.scale.width/2, this.scale.height/2, 220, 140, 0xff00ff, 0.18).setDepth(999);
-    this.add.text(14, 34, 'DEBUG: jeśli to widzisz, Phaser renderuje', { fontFamily:'system-ui', fontSize:'13px', color:'#ffffff' }).setDepth(1000);
+    this.add.rectangle(this.scale.width/2, this.scale.height/2, Math.max(520,this.scale.width*0.7), Math.max(320,this.scale.height*0.5), 0xff00ff, 1.0).setDepth(999);
+    this.add.text(14, 34, 'PHASER DEBUG: jeśli to widzisz, Phaser renderuje', { fontFamily:'system-ui', fontSize:'16px', color:'#ffffff' }).setDepth(1000);
 
     refreshResources();
     log("Start. Klikaj sąsiednie heksy, by lecieć przez pustkę do planet.");
     requestRender();
+    // canvas-size-log
+    try {
+      const canvas = this.game.canvas;
+      log(`Canvas: ${canvas.width}x${canvas.height} | parent #game: ${document.getElementById('game')?.clientWidth}x${document.getElementById('game')?.clientHeight}`);
+    } catch (e) { log('Canvas size check failed'); }
+
 
     this.input.on("pointerdown", (pointer)=>{
       const {x,y} = pointer.positionToCamera(this.cameras.main);
@@ -609,6 +621,7 @@ function hash2(a,b){
 // Boot
 const config = {
   type: Phaser.AUTO,
+  transparent: false,
   parent: "game",
   width: 980,
   height: 640,
