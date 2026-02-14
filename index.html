@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Szlaki Pyłu (Web MVP v2.1)</title>
+  <title>Szlaki Pyłu (Web MVP v2.2)</title>
   <style>
     html, body { margin:0; padding:0; height:100%; background:#0b0d14; color:#e8eaf6; font-family: system-ui, Arial; }
     #wrap { display:flex; height:100%; }
-    #game { flex: 1; position: relative; }
+    #game { flex: 1; position: relative; min-height: 100vh; }
     #ui { width: 400px; max-width: 48vw; border-left: 1px solid rgba(255,255,255,.1); padding: 12px; box-sizing: border-box; background: rgba(255,255,255,.03); overflow:auto; }
     .bar { display:flex; gap:8px; flex-wrap:wrap; font-weight:600; margin-bottom: 10px; }
     .card { border:1px solid rgba(255,255,255,.12); border-radius:12px; padding:12px; margin: 10px 0; background: rgba(0,0,0,.25); }
@@ -23,7 +23,7 @@
     .hint { font-size: 12px; opacity: .75; margin-top: 6px; }
     .pill { padding: 2px 8px; border-radius: 999px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.05); font-size: 12px; opacity:.95; }
     .inspector { display:flex; gap:12px; align-items:center; }
-    canvas { border-radius: 12px; border: 1px solid rgba(255,255,255,.12); background: rgba(0,0,0,.18); }
+    #planetCanvas { border-radius: 12px; border: 1px solid rgba(255,255,255,.12); background: rgba(0,0,0,.18); }
   </style>
 </head>
 <body>
@@ -52,7 +52,7 @@
           <button id="btnMarket">Handel</button>
           <button id="btnInstall">Instalacje</button>
           <button id="btnAction">Akcja</button>
-          <button id="btnFight">Walka</button>
+          <button id="btnFight" style="display:none">Walka</button>
           <button id="btnClose">Zamknij</button>
         </div>
         <div class="hint" id="planetTags" style="margin-top:10px"></div>

@@ -1,3 +1,4 @@
+window.addEventListener('error', (e)=>{ try{ const el=document.getElementById('log'); if(el) el.textContent += `JS ERROR: ${e.message}\n`; }catch{} });
 // Szlaki Pyłu — Web MVP v2.1
 // Fix: przycisk Instalacje działa niezawodnie (guard na brak econ).
 // Nowość: Skaner (inspektor) z opisem heksa + mini-grafiką planety.
@@ -615,7 +616,7 @@ function drawPlanet(g, cx, cy, biome){
   g.fillStyle(0x000000, 0.35);
   g.fillCircle(cx+5, cy+6, 14);
 
-  const col = Phaser.Display.Color.HexStringToColor(biome.color).color;
+  const col = hexToInt(biome.color);
   g.fillStyle(col, 1.0);
   g.fillCircle(cx, cy, 14);
 
@@ -654,6 +655,14 @@ function tryMove(q,r){
   }
   world.player = {q,r};
   enterHex(q,r);
+}
+
+
+function hexToInt(hex){
+  if (!hex) return 0x9aa0a6;
+  const s = hex.startsWith("#") ? hex.slice(1) : hex;
+  const n = parseInt(s, 16);
+  return Number.isFinite(n) ? n : 0x9aa0a6;
 }
 
 // --- helpers ---
