@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Szlaki Pyłu (Web MVP v2.2)</title>
+  <title>Szlaki Pyłu (Web MVP v2.8)</title>
   <style>
     html, body { margin:0; padding:0; height:100%; background:#0b0d14; color:#e8eaf6; font-family: system-ui, Arial; }
     #wrap { display:flex; height:100%; }
@@ -30,7 +30,8 @@
   <div id="wrap">
     <div id="game"></div>
     <div id="ui">
-      <div class="bar" id="resources"></div>
+      <div class="card" style="margin-top:0"><div class="title">Wersja: v2.8</div><div class="hint">Jeśli nie widzisz v2.8, to przeglądarka/GitHub Pages trzyma cache. Otwórz stronę z <code>?v=28</code> i zrób Ctrl+F5.</div></div>
+<div class="bar" id="resources"></div>
       <div class="hint">Klikaj sąsiednie heksy (koszt ruchu: -1 tlen, -1 paliwo). Tlen możesz kupować jako towar lub produkować instalacją na planetach.</div>
 
       <div class="card" id="inspectCard">
@@ -82,6 +83,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.js"></script>
-  <script type="module" src="./main.js"></script>
+  <script type="module" src="./main.js?v=28"></script>
 </body>
 </html>
