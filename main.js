@@ -22,6 +22,11 @@ const Goods = [
   { id:6, name:"Tlen (kanister)", base:14 },
 ];
 
+const CONSUMABLES = {
+  1: { meter: 'fuel',   per_unit: 6, label: 'Paliwo' },
+  6: { meter: 'oxygen', per_unit: 6, label: 'Tlen' },
+};
+
 const Installations = [
   { id:"OXYGEN_PLANT", name:"Instalacja tlenu", cost:80,  produces:{ good:6, per_tick:2 }, desc:"Produkuje kanistry tlenu." },
   { id:"MINE",         name:"Kopalnia",         cost:90,  produces:{ good:0, per_tick:2 }, desc:"Wydobywa rudę." },
@@ -342,7 +347,10 @@ function showMarket(planet){
     const stock=planet.econ.stock.get(g.id) ?? 0;
 
     const name=document.createElement("div");
-    name.textContent=`${g.name} | ${p} CR (magazyn: ${stock}, masz: ${owned})`;
+        const ownedLabel = CONSUMABLES[g.id]
+      ? (CONSUMABLES[g.id].meter === 'fuel' ? `paliwo: ${state.fuel}` : `tlen: ${state.oxygen}`)
+      : `masz: ${owned}`;
+    name.textContent=`${g.name} | ${p} CR (magazyn: ${stock}, ${ownedLabel})`;
 
     const buy=document.createElement("button");
     buy.textContent="Kup";
@@ -362,6 +370,19 @@ function showMarket(planet){
     sell.textContent="Sprzedaj";
     sell.disabled = owned<=0;
     sell.onclick=()=>{
+      // Paliwo i tlen sprzedajesz z "licznika" (jeśli masz wystarczający zapas)
+      if (CONSUMABLES[g.id]) {
+        const { meter, per_unit } = CONSUMABLES[g.id];
+        if (state[meter] < per_unit) return log(`Za mało ${meter === 'fuel' ? 'paliwa' : 'tlenu'}, żeby sprzedać pakiet (${per_unit}).`);
+        state[meter] -= per_unit;
+        planet.econ.stock.set(g.id, stock + 1);
+        state.credits += p;
+        refreshResources();
+        log(`Sprzedano ${g.name}: -${per_unit} ${meter === 'fuel' ? 'paliwa' : 'tlenu'} (+${p} CR).`);
+        showMarket(planet); renderInspector(planet);
+        return;
+      }
+
       if (owned<=0) return log(`Nie masz ${g.name}.`);
       state.cargo.set(g.id, owned-1);
       planet.econ.stock.set(g.id, stock+1);
@@ -491,7 +512,7 @@ class MainScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor("#070914");
 
     generateWorld();
-    this.add.text(12, 10, 'Szlaki Pyłu v2.7', { fontFamily:'system-ui', fontSize:'14px', color:'#e8eaf6' }).setDepth(1000);
+    this.add.text(12, 10, 'Szlaki Pyłu v2.9', { fontFamily:'system-ui', fontSize:'14px', color:'#e8eaf6' }).setDepth(1000);
 
     refreshResources();
     log("Start. Klikaj sąsiednie heksy, by lecieć przez pustkę do planet.");
