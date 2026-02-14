@@ -209,13 +209,7 @@ function enterHex(q,r){
   showEvent(h);
   renderInspector(h);
   refreshResources();
-  requestRender();
-    // canvas-size-log
-    try {
-      const canvas = this.game.canvas;
-      log(`Canvas: ${canvas.width}x${canvas.height} | parent #game: ${document.getElementById('game')?.clientWidth}x${document.getElementById('game')?.clientHeight}`);
-    } catch (e) { log('Canvas size check failed'); }
- // odśwież rysunek
+  requestRender(); // odśwież rysunek
 }
 
 // UI
@@ -452,17 +446,13 @@ function renderWorld(){
 
   const g = gameGfx;
   g.clear();
-  // solid backdrop to verify drawing is visible
-  g.fillStyle(0x0b0d14, 1);
-  g.fillRect(0, 0, gameScene.scale.width, gameScene.scale.height);
-
 
   const w = gameScene.scale.width;
   const h = gameScene.scale.height;
   const ox = w/2, oy = h/2;
 
   // gwiazdy tła (dość widoczne)
-  g.fillStyle(0xffffff, 0.16);
+  g.fillStyle(0xffffff, 0.10);
   for (let i=0;i<140;i++){
     const sx = (i*131) % w;
     const sy = (i*271) % h;
@@ -474,8 +464,8 @@ function renderWorld(){
     const cx = ox + p.x;
     const cy = oy + p.y;
 
-    const fill = (cell.type===HexType.SPACE) ? 0x141a2e : (cell.type===HexType.SUN ? 0x3a2208 : 0x1a2340);
-    drawHex(g, cx, cy, HEX_SIZE, fill, 1.0, 0xffffff, 0.22);
+    const fill = (cell.type===HexType.SPACE) ? 0x0f1320 : (cell.type===HexType.SUN ? 0x241406 : 0x101827);
+    drawHex(g, cx, cy, HEX_SIZE, fill, 0.98, 0xffffff, 0.08);
 
     if (cell.type===HexType.SUN) drawSun(g, cx, cy);
     if (cell.type===HexType.PLANET) drawPlanet(g, cx, cy, cell.biome);
@@ -483,18 +473,14 @@ function renderWorld(){
 
   // gracz
   const pp = axialToPixel(world.player.q, world.player.r);
-  g.fillStyle(0xffffff, 1);
+  g.fillStyle(0xe8eaf6, 1);
   g.fillCircle(ox+pp.x, oy+pp.y, 8);
 
   // aktywny heks
   if (world.current){
     const cp = axialToPixel(world.current.q, world.current.r);
-    drawHexOutline(g, ox+cp.x, oy+cp.y, HEX_SIZE, 0xffffff, 0.45, 4);
+    drawHexOutline(g, ox+cp.x, oy+cp.y, HEX_SIZE, 0xffffff, 0.25, 3);
   }
-
-  // debug label
-  gameScene.add.text(12, 10, "Render OK (v2.3)", { fontFamily:"system-ui", fontSize:"14px", color:"#e8eaf6" })
-    .setScrollFactor(0).setDepth(1000);
 }
 
 class MainScene extends Phaser.Scene {
@@ -505,19 +491,11 @@ class MainScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor("#070914");
 
     generateWorld();
-    // DEBUG_RECT
-    this.add.rectangle(this.scale.width/2, this.scale.height/2, Math.max(520,this.scale.width*0.7), Math.max(320,this.scale.height*0.5), 0xff00ff, 1.0).setDepth(999);
-    this.add.text(14, 34, 'PHASER DEBUG: jeśli to widzisz, Phaser renderuje', { fontFamily:'system-ui', fontSize:'16px', color:'#ffffff' }).setDepth(1000);
+    this.add.text(12, 10, 'Szlaki Pyłu v2.7', { fontFamily:'system-ui', fontSize:'14px', color:'#e8eaf6' }).setDepth(1000);
 
     refreshResources();
     log("Start. Klikaj sąsiednie heksy, by lecieć przez pustkę do planet.");
     requestRender();
-    // canvas-size-log
-    try {
-      const canvas = this.game.canvas;
-      log(`Canvas: ${canvas.width}x${canvas.height} | parent #game: ${document.getElementById('game')?.clientWidth}x${document.getElementById('game')?.clientHeight}`);
-    } catch (e) { log('Canvas size check failed'); }
-
 
     this.input.on("pointerdown", (pointer)=>{
       const {x,y} = pointer.positionToCamera(this.cameras.main);
@@ -568,18 +546,18 @@ function drawHexOutline(g, cx, cy, size, lineColor, lineAlpha, width){
 function drawPlanet(g, cx, cy, biome){
   g.fillStyle(0x000000, 0.35); g.fillCircle(cx+5, cy+6, 14);
   g.fillStyle(biome.color, 1.0); g.fillCircle(cx, cy, 14);
-  g.fillStyle(0xffffff, 0.16); g.fillCircle(cx-5, cy-6, 6);
+  g.fillStyle(0xffffff, 0.10); g.fillCircle(cx-5, cy-6, 6);
   if (biome.ring){
     g.lineStyle(3, 0xffffff, 0.22);
-    g.beginPath();
-    g.ellipse(cx, cy+1, 22, 10, Phaser.Math.DegToRad(-18), 0, Math.PI*2);
-    g.strokePath();
+    // Phaser.Graphics nie ma metody ellipse() w tej wersji — używamy strokeEllipse()
+    // (bez rotacji, ale wystarcza jako “pierścień”)
+    g.strokeEllipse(cx, cy+1, 44, 20);
   }
 }
 function drawSun(g, cx, cy){
   g.fillStyle(0xffd166, 0.95); g.fillCircle(cx, cy, 18);
   g.fillStyle(0xff7b00, 0.22); g.fillCircle(cx, cy, 28);
-  g.fillStyle(0xffffff, 0.16); g.fillCircle(cx-7, cy-7, 8);
+  g.fillStyle(0xffffff, 0.10); g.fillCircle(cx-7, cy-7, 8);
 }
 
 function tryMove(q,r){
@@ -621,7 +599,6 @@ function hash2(a,b){
 // Boot
 const config = {
   type: Phaser.AUTO,
-  transparent: false,
   parent: "game",
   width: 980,
   height: 640,
