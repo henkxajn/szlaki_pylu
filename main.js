@@ -355,39 +355,55 @@ function showMarket(planet){
     const buy=document.createElement("button");
     buy.textContent="Kup";
     buy.disabled = stock<=0;
-    buy.onclick=()=>{
-      if (state.credits<p) return log("Brak kredytów.");
-      if (cargoUsed()>=state.cargoCap) return log("Brak miejsca w ładowni.");
-      if ((planet.econ.stock.get(g.id)??0)<=0) return log("Brak towaru w magazynie planety.");
-      state.credits-=p;
-      state.cargo.set(g.id, owned+1);
-      planet.econ.stock.set(g.id, stock-1);
-      refreshResources(); log(`Kupiono ${g.name} (-${p} CR).`);
+    buy.onclick = () => {
+      if (state.credits < p) return log("Brak kredytów.");
+      if ((planet.econ.stock.get(g.id) ?? 0) <= 0) return log("Brak towaru w magazynie planety.");
+
+      // Automatyczne uzupełnianie zasobów: paliwo i tlen NIE trafiają do ładowni.
+      if (CONSUMABLES[g.id]) {
+        const { meter, per_unit } = CONSUMABLES[g.id];
+        state.credits -= p;
+        planet.econ.stock.set(g.id, stock - 1);
+        state[meter] += per_unit;
+        refreshResources();
+        log(`Kupiono ${g.name}: +${per_unit} (${meter}) (-${p} CR).`);
+        showMarket(planet); renderInspector(planet);
+        return;
+      }
+
+      // Pozostałe towary trafiają do ładowni
+      if (cargoUsed() >= state.cargoCap) return log("Brak miejsca w ładowni.");
+      state.credits -= p;
+      state.cargo.set(g.id, owned + 1);
+      planet.econ.stock.set(g.id, stock - 1);
+      refreshResources();
+      log(`Kupiono ${g.name} (-${p} CR).`);
       showMarket(planet); renderInspector(planet);
     };
 
     const sell=document.createElement("button");
     sell.textContent="Sprzedaj";
-    sell.disabled = owned<=0;
-    sell.onclick=()=>{
-      // Paliwo i tlen sprzedajesz z "licznika" (jeśli masz wystarczający zapas)
+    sell.disabled = CONSUMABLES[g.id] ? (state[CONSUMABLES[g.id].meter] < CONSUMABLES[g.id].per_unit) : (owned<=0);
+    sell.onclick = () => {
+      // Automatyczne uzupełnianie zasobów: sprzedajesz paliwo/tlen z licznika w paczkach po 6.
       if (CONSUMABLES[g.id]) {
         const { meter, per_unit } = CONSUMABLES[g.id];
-        if (state[meter] < per_unit) return log(`Za mało ${meter === 'fuel' ? 'paliwa' : 'tlenu'}, żeby sprzedać pakiet (${per_unit}).`);
+        if (state[meter] < per_unit) return log(`Za mało ${meter}, aby sprzedać (${per_unit}).`);
         state[meter] -= per_unit;
         planet.econ.stock.set(g.id, stock + 1);
         state.credits += p;
         refreshResources();
-        log(`Sprzedano ${g.name}: -${per_unit} ${meter === 'fuel' ? 'paliwa' : 'tlenu'} (+${p} CR).`);
+        log(`Sprzedano ${g.name}: -${per_unit} (${meter}) (+${p} CR).`);
         showMarket(planet); renderInspector(planet);
         return;
       }
 
-      if (owned<=0) return log(`Nie masz ${g.name}.`);
-      state.cargo.set(g.id, owned-1);
-      planet.econ.stock.set(g.id, stock+1);
-      state.credits+=p;
-      refreshResources(); log(`Sprzedano ${g.name} (+${p} CR).`);
+      if (owned <= 0) return log(`Nie masz ${g.name}.`);
+      state.cargo.set(g.id, owned - 1);
+      planet.econ.stock.set(g.id, stock + 1);
+      state.credits += p;
+      refreshResources();
+      log(`Sprzedano ${g.name} (+${p} CR).`);
       showMarket(planet); renderInspector(planet);
     };
 
@@ -512,7 +528,7 @@ class MainScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor("#070914");
 
     generateWorld();
-    this.add.text(12, 10, 'Szlaki Pyłu v2.9', { fontFamily:'system-ui', fontSize:'14px', color:'#e8eaf6' }).setDepth(1000);
+    this.add.text(12, 10, 'Szlaki Pyłu v3.0', { fontFamily:'system-ui', fontSize:'14px', color:'#e8eaf6' }).setDepth(1000);
 
     refreshResources();
     log("Start. Klikaj sąsiednie heksy, by lecieć przez pustkę do planet.");
